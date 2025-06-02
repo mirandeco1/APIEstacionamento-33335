@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciamento de Estacionamento</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>Gerenciamento de Estacionamento</h1>
+        <p>Interface para registro e consulta de veículos</p>
+    </header>
+
+    <main>
+        <section id="entry-exit-section" class="card">
+            <h2>Registro de Veículo</h2>
+            <div class="form-group">
+                <label for="plateInput">Placa do Veículo:</label>
+                <input type="text" id="plateInput" placeholder="Ex: ABC1234 ou ABC1D23" maxlength="7">
+            </div>
+            <button id="registerEntryBtn" class="btn btn-primary">Registrar Entrada</button>
+            <button id="registerExitBtn" class="btn btn-secondary">Registrar Saída</button>
+            <p id="entryExitMessage" class="message"></p>
+        </section>
+
+        <section id="check-vehicle-section" class="card">
+            <h2>Consultar Veículo</h2>
+            <div class="form-group">
+                <label for="checkPlateInput">Placa do Veículo:</label>
+                <input type="text" id="checkPlateInput" placeholder="Ex: ABC1234 ou ABC1D23" maxlength="7">
+            </div>
+            <button id="checkVehicleBtn" class="btn btn-info">Verificar Veículo</button>
+            <p id="checkVehicleMessage" class="message"></p>
+        </section>
+
+        <section id="time-spent-section" class="card">
+            <h2>Tempo de Permanência</h2>
+            <div class="form-group">
+                <label for="timePlateInput">Placa do Veículo:</label>
+                <input type="text" id="timePlateInput" placeholder="Ex: ABC1234 ou ABC1D23" maxlength="7">
+            </div>
+            <button id="getTimeSpentBtn" class="btn btn-info">Verificar Tempo</button>
+            <p id="timeSpentMessage" class="message"></p>
+        </section>
+
+        <section id="active-vehicles-section" class="card">
+            <h2>Veículos no Estacionamento</h2>
+            <button id="listActiveVehiclesBtn" class="btn btn-warning">Listar Veículos Ativos</button>
+            <div id="activeVehiclesList">
+                <p class="message" id="activeVehiclesMessage"></p>
+                <ul>
+                    </ul>
+            </div>
+        </section>
+
+        <section id="slots-section" class="card">
+            <h2>Vagas Disponíveis</h2>
+            <button id="checkSlotsBtn" class="btn btn-success">Verificar Vagas</button>
+            <p id="slotsMessage" class="message"></p>
+        </section>
+
+        <section id="cancel-update-section" class="card">
+            <h2>Cancelar / Atualizar Registro</h2>
+            <div class="form-group">
+                <label for="cancelUpdatePlateInput">Placa do Veículo:</label>
+                <input type="text" id="cancelUpdatePlateInput" placeholder="Ex: ABC1234 ou ABC1D23" maxlength="7">
+            </div>
+            <div class="form-group">
+                <label for="updateNewDataInput">Novos Dados (Ex: Novo proprietário)</label>
+                <input type="text" id="updateNewDataInput" placeholder="Dados para atualização (opcional)">
+            </div>
+            <button id="cancelRegistrationBtn" class="btn btn-danger">Cancelar Registro</button>
