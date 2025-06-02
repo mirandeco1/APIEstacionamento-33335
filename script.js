@@ -1,5 +1,4 @@
-const BASE_API_URL = 'http://cnms-parking-api.net.uztec.com.br/api/v1'; // Usando localhost como placeholder
-
+const API = 'http://cnms-parking-api.net.uztec.com.br/api/v1'
 
 // --- Funções Utilitárias ---
 
