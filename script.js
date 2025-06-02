@@ -1,39 +1,69 @@
 // Objeto para simular o banco de dados de veículos no estacionamento
-// Em um sistema real, isso seria um banco de dados persistente
+// Em um sistema real, isso seria um banco de dados persistente no backend
 const parkingDatabase = {
-    vehicles: [], // Array de objetos { plate: 'ABC1234', entryTime: Date }
-    slotsAvailable: 50
+    vehicles: [], // Array de objetos { plate: 'ABC1234', entryTime: Date, additionalData: '...' }
+    totalSlots: 50 // Capacidade total do estacionamento
 };
 
-// Funções utilitárias para exibir mensagens
-function showMessage(elementId, message, type = 'info') {
+// --- Funções Utilitárias ---
+
+/**
+ * Exibe uma mensagem em um elemento HTML específico.
+ * @param {string} elementId O ID do elemento HTML onde a mensagem será exibida.
+ * @param {string} message O texto da mensagem.
+ * @param {'success' | 'error' | 'info'} type O tipo da mensagem para estilização.
+ * @param {number} duration Duração em milissegundos para a mensagem desaparecer (padrão: 5000ms).
+ */
+function showMessage(elementId, message, type = 'info', duration = 5000) {
     const element = document.getElementById(elementId);
-    element.textContent = message;
-    element.className = `message ${type}`;
-    // Limpa a mensagem após alguns segundos
-    setTimeout(() => {
-        element.textContent = '';
-        element.className = 'message';
-    }, 5000);
+    if (element) {
+        element.textContent = message;
+        element.className = `message ${type}`;
+        setTimeout(() => {
+            element.textContent = '';
+            element.className = 'message';
+        }, duration);
+    } else {
+        console.error(`Elemento com ID '${elementId}' não encontrado para exibir a mensagem.`);
+    }
 }
 
-// Função para formatar a placa (ex: remover espaços, garantir maiúsculas)
+/**
+ * Formata a placa do veículo (remove espaços, garante maiúsculas).
+ * @param {string} plate A placa do veículo.
+ * @returns {string} A placa formatada.
+ */
 function formatPlate(plate) {
-    return plate.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+    return plate ? plate.replace(/[^a-zA-Z0-9]/g, '').toUpperCase() : '';
 }
 
-// --- Funções que simulam as chamadas à API ---
+/**
+ * Valida o formato da placa (ex: 3 letras e 4 números ou 3 letras, 1 número, 1 letra, 2 números).
+ * @param {string} plate A placa a ser validada.
+ * @returns {boolean} True se a placa for válida, false caso contrário.
+ */
+function validatePlate(plate) {
+    const mercosulPattern = /^[A-Z]{3}[0-9][A-Z][0-9]{2}$/; // Ex: ABC4E67
+    const oldPattern = /^[A-Z]{3}[0-9]{4}$/; // Ex: ABC1234
+    return mercosulPattern.test(plate) || oldPattern.test(plate);
+}
 
-// POST /entry - Registrar Entrada
+// --- Funções que Simulam as Chamadas à API (Backend Fictício) ---
+
+// POST /entry - Registrar Entrada de Veículo
 function simulateEntry(plate) {
     const formattedPlate = formatPlate(plate);
     if (!formattedPlate) {
         showMessage('entryExitMessage', 'Por favor, digite a placa do veículo.', 'error');
         return;
     }
+    if (!validatePlate(formattedPlate)) {
+        showMessage('entryExitMessage', 'Formato de placa inválido. Use ABC1234 ou ABC1D23.', 'error');
+        return;
+    }
 
-    if (parkingDatabase.vehicles.length >= parkingDatabase.slotsAvailable) {
-        showMessage('entryExitMessage', `Estacionamento lotado. (${parkingDatabase.slotsAvailable} vagas)`, 'error');
+    if (parkingDatabase.vehicles.length >= parkingDatabase.totalSlots) {
+        showMessage('entryExitMessage', `Estacionamento lotado. (${parkingDatabase.totalSlots - parkingDatabase.vehicles.length} vagas disponíveis)`, 'error');
         return;
     }
 
@@ -44,16 +74,19 @@ function simulateEntry(plate) {
     }
 
     parkingDatabase.vehicles.push({ plate: formattedPlate, entryTime: new Date() });
-    parkingDatabase.slotsAvailable--;
     showMessage('entryExitMessage', `Entrada de ${formattedPlate} registrada com sucesso!`, 'success');
-    updateActiveVehiclesList(); // Atualiza a lista após a entrada
+    updateParkingUI(); // Atualiza a UI após a entrada
 }
 
-// PATCH /exit/{plate} - Registrar Saída
+// PATCH /exit/{plate} - Registrar Saída de Veículo
 function simulateExit(plate) {
     const formattedPlate = formatPlate(plate);
     if (!formattedPlate) {
         showMessage('entryExitMessage', 'Por favor, digite a placa do veículo para a saída.', 'error');
+        return;
+    }
+    if (!validatePlate(formattedPlate)) {
+        showMessage('entryExitMessage', 'Formato de placa inválido. Use ABC1234 ou ABC1D23.', 'error');
         return;
     }
 
@@ -61,19 +94,22 @@ function simulateExit(plate) {
     parkingDatabase.vehicles = parkingDatabase.vehicles.filter(v => v.plate !== formattedPlate);
 
     if (parkingDatabase.vehicles.length < initialLength) {
-        parkingDatabase.slotsAvailable++;
         showMessage('entryExitMessage', `Saída de ${formattedPlate} registrada com sucesso!`, 'success');
-        updateActiveVehiclesList(); // Atualiza a lista após a saída
+        updateParkingUI(); // Atualiza a UI após a saída
     } else {
         showMessage('entryExitMessage', `Veículo com placa ${formattedPlate} não encontrado no estacionamento.`, 'error');
     }
 }
 
-// GET /check/{plate} - Verificar Veículo
+// GET /check/{plate} - Verificar se o Veículo está no Estacionamento
 function simulateCheckVehicle(plate) {
     const formattedPlate = formatPlate(plate);
     if (!formattedPlate) {
         showMessage('checkVehicleMessage', 'Por favor, digite a placa do veículo para verificar.', 'error');
+        return;
+    }
+    if (!validatePlate(formattedPlate)) {
+        showMessage('checkVehicleMessage', 'Formato de placa inválido. Use ABC1234 ou ABC1D23.', 'error');
         return;
     }
 
@@ -85,11 +121,15 @@ function simulateCheckVehicle(plate) {
     }
 }
 
-// GET /time/{plate} - Tempo de Permanência
+// GET /time/{plate} - Tempo de Permanência de um Veículo
 function simulateTimeSpent(plate) {
     const formattedPlate = formatPlate(plate);
     if (!formattedPlate) {
         showMessage('timeSpentMessage', 'Por favor, digite a placa do veículo para verificar o tempo.', 'error');
+        return;
+    }
+    if (!validatePlate(formattedPlate)) {
+        showMessage('timeSpentMessage', 'Formato de placa inválido. Use ABC1234 ou ABC1D23.', 'error');
         return;
     }
 
@@ -104,43 +144,52 @@ function simulateTimeSpent(plate) {
         const minutes = Math.floor((diffSeconds % 3600) / 60);
         const seconds = diffSeconds % 60;
 
-        showMessage('timeSpentMessage', `O veículo ${formattedPlate} está estacionado há: ${hours}h ${minutes}m ${seconds}s.`, 'success');
+        showMessage('timeSpentMessage', `O veículo ${formattedPlate} está estacionado há: ${hours}h ${minutes}m ${seconds}s.`, 'success', 8000); // Exibe por mais tempo
     } else {
         showMessage('timeSpentMessage', `Veículo com placa ${formattedPlate} não encontrado no estacionamento.`, 'error');
     }
 }
 
-// GET /active - Listar Veículos Ativos
+// GET /active - Atualiza a Lista de Veículos Ativos na UI
 function updateActiveVehiclesList() {
     const listElement = document.querySelector('#activeVehiclesList ul');
+    const statusMessageElement = document.getElementById('activeVehiclesStatusMessage');
     listElement.innerHTML = ''; // Limpa a lista existente
 
     if (parkingDatabase.vehicles.length === 0) {
-        document.getElementById('activeVehiclesMessage').textContent = 'Nenhum veículo ativo no momento.';
-        document.getElementById('activeVehiclesMessage').className = 'message info';
+        statusMessageElement.textContent = 'Nenhum veículo ativo no momento.';
+        statusMessageElement.className = 'message info';
         return;
     }
 
-    document.getElementById('activeVehiclesMessage').textContent = ''; // Limpa a mensagem se houver veículos
-    document.getElementById('activeVehiclesMessage').className = 'message';
+    statusMessageElement.textContent = ''; // Limpa a mensagem se houver veículos
+    statusMessageElement.className = 'message'; // Remove classes de estilo
 
     parkingDatabase.vehicles.forEach(vehicle => {
         const listItem = document.createElement('li');
         listItem.innerHTML = `<span>${vehicle.plate}</span> (Entrada: ${vehicle.entryTime.toLocaleString()})`;
+        if (vehicle.additionalData) {
+            listItem.innerHTML += ` - Dados Adicionais: ${vehicle.additionalData}`;
+        }
         listElement.appendChild(listItem);
     });
 }
 
 // GET /slots - Verificar Vagas Disponíveis
 function simulateCheckSlots() {
-    showMessage('slotsMessage', `Vagas disponíveis: ${parkingDatabase.slotsAvailable}`, 'success');
+    const available = parkingDatabase.totalSlots - parkingDatabase.vehicles.length;
+    showMessage('slotsMessage', `Vagas disponíveis: ${available} de ${parkingDatabase.totalSlots}.`, 'success');
 }
 
-// DELETE /cancel/{plate} - Cancelar Registro
+// DELETE /cancel/{plate} - Cancelar Registro de Veículo
 function simulateCancelRegistration(plate) {
     const formattedPlate = formatPlate(plate);
     if (!formattedPlate) {
         showMessage('cancelUpdateMessage', 'Por favor, digite a placa do veículo para cancelar.', 'error');
+        return;
+    }
+    if (!validatePlate(formattedPlate)) {
+        showMessage('cancelUpdateMessage', 'Formato de placa inválido. Use ABC1234 ou ABC1D23.', 'error');
         return;
     }
 
@@ -148,28 +197,31 @@ function simulateCancelRegistration(plate) {
     parkingDatabase.vehicles = parkingDatabase.vehicles.filter(v => v.plate !== formattedPlate);
 
     if (parkingDatabase.vehicles.length < initialLength) {
-        parkingDatabase.slotsAvailable++;
         showMessage('cancelUpdateMessage', `Registro do veículo ${formattedPlate} cancelado com sucesso.`, 'success');
-        updateActiveVehiclesList();
+        updateParkingUI();
     } else {
         showMessage('cancelUpdateMessage', `Veículo ${formattedPlate} não encontrado para cancelar o registro.`, 'error');
     }
 }
 
-// PUT /update/{plate} - Atualizar Dados
+// PUT /update/{plate} - Atualizar Dados de um Veículo
 function simulateUpdateRegistration(plate, newData) {
     const formattedPlate = formatPlate(plate);
     if (!formattedPlate) {
         showMessage('cancelUpdateMessage', 'Por favor, digite a placa do veículo para atualizar.', 'error');
         return;
     }
+    if (!validatePlate(formattedPlate)) {
+        showMessage('cancelUpdateMessage', 'Formato de placa inválido. Use ABC1234 ou ABC1D23.', 'error');
+        return;
+    }
 
     const vehicleIndex = parkingDatabase.vehicles.findIndex(v => v.plate === formattedPlate);
 
     if (vehicleIndex !== -1) {
-        // Simplesmente adiciona um novo campo 'data' ou atualiza
-        parkingDatabase.vehicles[vehicleIndex].newData = newData || 'Nenhum dado novo especificado';
+        parkingDatabase.vehicles[vehicleIndex].additionalData = newData || 'Nenhum dado novo especificado';
         showMessage('cancelUpdateMessage', `Dados do veículo ${formattedPlate} atualizados com sucesso.`, 'success');
+        updateParkingUI(); // Atualiza a UI para refletir os novos dados
     } else {
         showMessage('cancelUpdateMessage', `Veículo ${formattedPlate} não encontrado para atualização.`, 'error');
     }
@@ -189,11 +241,13 @@ function simulateGenerateReport() {
 
     const report = {
         totalVehiclesCurrentlyParked: parkingDatabase.vehicles.length,
-        availableSlots: parkingDatabase.slotsAvailable,
+        availableSlots: parkingDatabase.totalSlots - parkingDatabase.vehicles.length,
         parkedVehiclesDetails: parkingDatabase.vehicles.map(v => ({
             plate: v.plate,
-            entryTime: v.entryTime.toLocaleString(),
-            duration: new Date().getTime() - v.entryTime.getTime() // Milissegundos
+            entryTime: v.entryTime.toLocaleString('pt-BR'),
+            // Calculando a duração aqui para o relatório
+            durationMs: new Date().getTime() - v.entryTime.getTime(),
+            additionalData: v.additionalData || 'N/A'
         }))
     };
 
@@ -202,9 +256,22 @@ function simulateGenerateReport() {
     reportDetailsElement.textContent = JSON.stringify(report, null, 2); // Formata o JSON para melhor leitura
 }
 
+/**
+ * Função para atualizar todos os componentes da UI que dependem do estado do estacionamento.
+ * Chamada após cada operação que altera o estado do estacionamento.
+ */
+function updateParkingUI() {
+    updateActiveVehiclesList();
+    simulateCheckSlots(); // Atualiza as vagas disponíveis
+    // Limpa os campos de input de placa para facilitar a usabilidade
+    document.getElementById('plateInput').value = '';
+    document.getElementById('checkPlateInput').value = '';
+    document.getElementById('timePlateInput').value = '';
+    document.getElementById('cancelUpdatePlateInput').value = '';
+    document.getElementById('updateNewDataInput').value = '';
+}
 
 // --- Event Listeners para os botões ---
-
 document.addEventListener('DOMContentLoaded', () => {
     // Seção de Entrada/Saída
     document.getElementById('registerEntryBtn').addEventListener('click', () => {
@@ -256,7 +323,6 @@ document.addEventListener('DOMContentLoaded', () => {
         simulateGenerateReport();
     });
 
-    // Inicializa a lista de veículos ativos ao carregar a página
-    updateActiveVehiclesList();
-    simulateCheckSlots();
+    // Inicializa a UI ao carregar a página
+    updateParkingUI();
 });
